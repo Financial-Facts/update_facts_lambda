@@ -1,0 +1,7 @@
+**/__pychache__/
+Output/
+Temp/
+Data/
+*.pyc
+*.json
+*.txt
