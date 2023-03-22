@@ -51,13 +51,18 @@ def __delete_data() -> None:
 
 def __download_data() -> None:
     print("Downloading facts data from EDGAR...")
+    try:
+        os.mkdir('Temp')
+    except FileExistsError:
+        # Process already started but not finished...
+        print("Continuing with current temp folder...")
+        return
     req = Request(
         url=const.EDGAR_URL + const.DATA_ZIP_PATH,
         headers={'User-Agent': const.USER_AGENT_VALUE}
     )
     with urlopen(req) as zipresp:
         with ZipFile(BytesIO(zipresp.read())) as zfile:
-            os.mkdir('Temp')
             zfile.extractall(const.TEMP_DIRECTORY)
 
 
@@ -70,44 +75,44 @@ def __process_data() -> list:
     for i in range(len(tempFiles)):
         with open('Temp\\' + tempFiles[i]) as openTempFile:
             try:
-                with open('Data\\' + tempFiles[i]) as openDataFile:
-                    if (
-                        not filecmp.cmp(
-                            openTempFile.name,
-                            openDataFile.name,
-                            shallow=True
-                        )
-                    ):
-                        cik = openTempFile.name[5:-5]
-                        __update_database(openTempFile.name, cik)
-                        fileAdded = True
-            except FileNotFoundError:
-                cik = openTempFile.name[5:-5]
-                __update_database(openTempFile.name, cik)
-                fileAdded = True
+                temp = json.load(openTempFile)
+                try:
+                    with open('Data\\' + tempFiles[i]) as openDataFile:
+                        data = json.load(openDataFile)
+                        if (
+                            temp != data
+                        ):
+                            print("Updating %s..." % openTempFile.name)
+                            cik = openTempFile.name[5:-5]
+                            __update_database(temp, cik)
+                            fileAdded = True
+                except FileNotFoundError:
+                    cik = openTempFile.name[5:-5]
+                    __update_database(temp, cik)
+                    fileAdded = True
+            except json.decoder.JSONDecodeError:
+                print("Cannot process %s" % openTempFile.name)
         if (fileAdded):
             os.replace('Temp\\' + tempFiles[i], 'Data\\' + tempFiles[i])
             fileAdded = False
     shutil.rmtree('Temp')
 
 
-def __update_database(fileToProcess, cik) -> None:
-    with open(fileToProcess) as file:
+def __update_database(data, cik) -> None:
+    try:
+        text = json.dumps(data)
+        text = text.replace('\'', const.EMPTY)
         try:
-            data = json.load(file)
-            text = json.dumps(data)
-            text = text.replace('\'', const.EMPTY)
-            try:
-                cursor.execute(const.UPDATE_DATA_QUERY % (
-                    cik,
-                    text,
-                    text,
-                    cik
-                ))
-            except psycopg2.errors.UniqueViolation:
-                pass
-        except OSError:
+            cursor.execute(const.UPDATE_DATA_QUERY % (
+                cik,
+                text,
+                text,
+                cik
+            ))
+        except psycopg2.errors.UniqueViolation:
             pass
+    except OSError:
+        pass
     connection.commit()
 
 
