@@ -51,6 +51,10 @@ def __delete_data() -> None:
 
 def __download_data() -> None:
     print("Downloading facts data from EDGAR...")
+    try: 
+        os.mkdir('Data')
+    except FileExistsError:
+        pass
     try:
         os.mkdir('Temp')
     except FileExistsError:
@@ -88,7 +92,8 @@ def __process_data() -> list:
                             fileAdded = True
                 except FileNotFoundError:
                     cik = openTempFile.name[5:-5]
-                    __update_database(temp, cik)
+                    print("Adding %s..." % openTempFile.name)
+                    __insert_database(temp, cik)
                     fileAdded = True
             except json.decoder.JSONDecodeError:
                 print("Cannot process %s" % openTempFile.name)
@@ -104,8 +109,6 @@ def __update_database(data, cik) -> None:
         text = text.replace('\'', const.EMPTY)
         try:
             cursor.execute(const.UPDATE_DATA_QUERY % (
-                cik,
-                text,
                 text,
                 cik
             ))
@@ -113,7 +116,21 @@ def __update_database(data, cik) -> None:
             pass
     except OSError:
         pass
-    connection.commit()
+
+
+def __insert_database(data, cik) -> None:
+    try:
+        text = json.dumps(data)
+        text = text.replace('\'', const.EMPTY)
+        try:
+            cursor.execute(const.INSERT_DATA_QUERY % (
+                cik,
+                text
+            ))
+        except psycopg2.errors.UniqueViolation:
+            pass
+    except OSError:
+        pass
 
 
 if __name__ == '__main__':
@@ -141,6 +158,7 @@ if __name__ == '__main__':
     __download_data()
     __process_data()
 
+    connection.commit()
     cursor.close()
     connection.close()
 

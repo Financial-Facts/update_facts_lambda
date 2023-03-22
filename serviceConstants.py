@@ -26,18 +26,9 @@ CREATE_FACTS_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS facts (
                             data jsonb
                         );"""
 INSERT_DATA_QUERY = """INSERT INTO facts (cik, data)
-                     values('%s', (select * from to_jsonb('%s'::JSONB)))"""
-UPDATE_DATA_QUERY = """BEGIN;
--- other operations
-SAVEPOINT sp1;
-INSERT INTO facts (cik, data)
-    values('%s', (select * from to_jsonb('%s'::JSONB)));
--- Assume the above fails because of a unique key violation,
--- so now we issue these commands:
-ROLLBACK TO sp1;
-UPDATE facts set data='%s' where cik='%s';
--- continue with other operations, and eventually
-COMMIT;"""
+                     values('%s', (select * from to_jsonb('%s'::JSONB)));COMMIT;"""
+UPDATE_DATA_QUERY = """UPDATE facts set data='%s' where cik='%s';COMMIT;
+"""
 GET_DATA_QUERY = "SELECT data FROM facts where cik = '%s'"
 APPEND_CIK_QUERY = " or cik = '%s'"
 
