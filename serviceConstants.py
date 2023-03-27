@@ -17,6 +17,7 @@ TRUE = 'True'
 EMPTY = ''
 CIK = 'CIK'
 CIK_MAP = 'cikMap'
+FINANCIAL_FACTS = 'financial_facts'
 
 # Queries
 GET_PROCESSED_CIK_QUERY = 'SELECT cik from facts;'

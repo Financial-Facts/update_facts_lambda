@@ -28,7 +28,8 @@ def __get_db_connection():
         host=const.HOST,
         database=const.DATABASE_NAME,
         user=creds[0][0],
-        password=creds[1])
+        password=creds[1],
+        options="-c search_path=financial_facts")
     return conn
 
 
@@ -47,6 +48,7 @@ def __drop_facts(connection, cursor) -> None:
 def __delete_data() -> None:
     print("Deleting current facts data...")
     shutil.rmtree('Data')
+    shutil.rmtree('Temp')
 
 
 def __download_data() -> None:
