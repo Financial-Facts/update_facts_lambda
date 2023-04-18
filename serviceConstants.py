@@ -8,6 +8,7 @@ DB_PASSWORD_KEY="PASSWORD_KEY"
 DB_ENDPOINT_KEY="ENDPOINT_KEY"
 S3_KEY="S3_KEY"
 S3_SECRET_KEY="S3_SECRET_KEY"
+BUCKET_NAME_KEY="BUCKET_NAME_KEY"
 
 # Misc
 HOST = 'dev-financial-facts-db-1-public-instance-1.cilvae7glcw6.us-east-1.rds.amazonaws.com'
