@@ -8,11 +8,11 @@ import psycopg2
 import connection_utils as utils
 from botocore.exceptions import ClientError
 import os
-from time import sleep
 lock: threading.Lock = threading.Lock()
 
 MAX_CONNECTION_REESTABLISH_ATTEMPTS = 5
-BUCKET_NAME = os.environ[const.BUCKET_NAME_KEY],
+BUCKET_NAME = os.environ[const.BUCKET_NAME_KEY]
+MAX_PROCESSING_BATCH_SIZE = 5
 
 class file_processing_worker (threading.Thread):
 
@@ -40,17 +40,20 @@ class file_processing_worker (threading.Thread):
     async def waitForProcessingCompletion(
             self,
             loop: asyncio.AbstractEventLoop) -> None:
-        tasks: list[asyncio.Task] = []
-        for file in self.files:
-            tasks.append(loop.create_task(self.processFactsFile(
-                    file
-                )))
-            sleep(1)
-        await asyncio.wait(tasks)
+        i = 0
+        while i in range(len(self.files)):
+            tasks: list[asyncio.Task] = []
+            for j in range(MAX_PROCESSING_BATCH_SIZE):
+                tasks.append(loop.create_task(self.processFactsFile(
+                        self.files[i]
+                    )))
+                i += 1
+            await asyncio.wait(tasks)
 
     async def processFactsFile(
             self,
             file: ZipInfo) -> None:
+        fileAdded = False
         cik = file.filename[:-5]
         try:
             s3 = utils.initialize_S3()
@@ -74,7 +77,7 @@ class file_processing_worker (threading.Thread):
             print("Cannot process %s" % cik)
         if (fileAdded):
             fileAdded = False
-            object = self.s3.Object(BUCKET_NAME, file.filename)
+            object = s3.Object(BUCKET_NAME, file.filename)
             object.put(Body=json.dumps(temp))
 
     

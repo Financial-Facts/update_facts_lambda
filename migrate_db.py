@@ -1,15 +1,11 @@
-import os
-import sys
 import psycopg2
 import time
 import json
 import serviceConstants as const
-from os import listdir
 from io import BytesIO
 from urllib.request import Request, urlopen
 from zipfile import ZipFile
 from zipfile import ZipInfo
-import shutil
 from botocore.exceptions import ClientError
 import file_processing_worker as fpw
 import connection_utils as utils
@@ -32,7 +28,7 @@ def __initialize_db() -> None:
     connection.close()
 
 
-def __download_data() -> None:
+def __download_and_process_data() -> None:
     print("Downloading facts data from EDGAR...")
     req = Request(
         url=const.EDGAR_URL + const.DATA_ZIP_PATH,
@@ -41,6 +37,7 @@ def __download_data() -> None:
     with urlopen(req) as zipresp:
         with ZipFile(BytesIO(zipresp.read())) as zfile:
             __divide_processing_workload(zfile)
+
 
 def __divide_processing_workload(zfile: ZipFile):
     print("Dividing processing workload to workers...")
@@ -59,43 +56,13 @@ def __divide_processing_workload(zfile: ZipFile):
             name='file_processing_worker_%s' % i,
             counter=len(file_batches[i]),
             zip=zfile,
-            files=files
+            files=file_batches[i]
         ))
+        print("Starting worker %s..." % i)
         threads[int(i)].start()
     for t in threads:
         t.join()
     del (threads)
-
-
-def __process_data(zfile: ZipFile) -> list:
-    print("Processing data updates..")
-    s3 = __initialize_S3()
-    fileAdded = False
-    for file in zfile.filelist:
-        cik = file.filename[:-5]
-        try:
-            temp = json.loads(zfile.read(file))
-            try:
-                data = json.loads(s3.Bucket(BUCKET_NAME).Object(file.filename).get()['Body'].read().decode())
-                if (
-                    temp != data
-                ):
-                    print("Updating %s..." % cik)
-                    __attempt_update(cik, temp)
-                    fileAdded = True
-            except ClientError as ex:
-                if ex.response['Error']['Code'] == 'NoSuchKey':
-                    print("Adding %s..." % cik)
-                    __attempt_insert(cik, temp)
-                    fileAdded = True
-                else:
-                    print(ex)
-        except json.decoder.JSONDecodeError:
-            print("Cannot process %s" % cik)
-        if (fileAdded):
-            fileAdded = False
-            object = s3.Object(BUCKET_NAME, file.filename)
-            object.put(Body=json.dumps(temp))
 
 
 if __name__ == '__main__':
@@ -103,7 +70,7 @@ if __name__ == '__main__':
     startTime = time.time()
 
     __initialize_db()
-    __download_data()
+    __download_and_process_data()
 
     end = time.time()
 
