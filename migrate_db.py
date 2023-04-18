@@ -48,6 +48,7 @@ def __divide_processing_workload(zfile: ZipFile):
         step = int(len(files)/MAX_NUMBER_OF_THREADS) + 1
     threads = []
     file_batches = []
+    s3Client = utils.initialize_S3()
     for i in range(0, len(files), step):
         file_batches.append(files[i:i+step])
     for i in range(len(file_batches)):
@@ -56,7 +57,8 @@ def __divide_processing_workload(zfile: ZipFile):
             name='file_processing_worker_%s' % i,
             counter=len(file_batches[i]),
             zip=zfile,
-            files=file_batches[i]
+            files=file_batches[i],
+            s3=s3Client
         ))
         print("Starting worker %s..." % i)
         threads[int(i)].start()

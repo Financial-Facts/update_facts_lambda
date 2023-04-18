@@ -22,7 +22,8 @@ class file_processing_worker (threading.Thread):
         name,
         counter,
         zip: ZipFile,
-        files: list[ZipInfo]
+        files: list[ZipInfo],
+        s3
     ):
         threading.Thread.__init__(self)
         self.threadID = threadID
@@ -30,6 +31,7 @@ class file_processing_worker (threading.Thread):
         self.counter = counter
         self.zip = zip
         self.files = files
+        self.s3 = s3
 
     def run(self):
         loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
@@ -56,29 +58,30 @@ class file_processing_worker (threading.Thread):
         fileAdded = False
         cik = file.filename[:-5]
         try:
-            s3 = utils.initialize_S3()
             temp = json.loads(self.zip.read(file))
             try:
-                data = json.loads(s3.Bucket(BUCKET_NAME).Object(file.filename).get()['Body'].read().decode())
+                data = json.loads(self.s3.Bucket(BUCKET_NAME).Object(file.filename).get()['Body'].read().decode())
                 if (
                     temp != data
                 ):
-                    print("Updating %s..." % cik)
+                    print("%s: Updating %s..." % (self.name, cik))
                     self.__attempt_update(cik, temp)
                     fileAdded = True
             except ClientError as ex:
                 if ex.response['Error']['Code'] == 'NoSuchKey':
-                    print("Adding %s..." % cik)
+                    print("%s: self.name: Adding %s..." % (self.name, cik))
                     self.__attempt_insert(cik, temp)
                     fileAdded = True
                 else:
                     print(ex)
         except json.decoder.JSONDecodeError:
-            print("Cannot process %s" % cik)
+            print("%s: Cannot process %s" % (self.name, cik))
         if (fileAdded):
             fileAdded = False
-            object = s3.Object(BUCKET_NAME, file.filename)
+            object = self.s3.Object(BUCKET_NAME, file.filename)
             object.put(Body=json.dumps(temp))
+        else:
+            print("%s: %s is up to date!" % (self.name, cik))
 
     
     def __attempt_update(self, cik, data) -> None:
