@@ -1,5 +1,4 @@
 #DB
-ENDPOINT='dev-financial-facts-db-1-public-instance-1.cilvae7glcw6.us-east-1.rds.amazonaws.com'
 PORT="5432"
 REGION="us-east-1"
 DBNAME="financial_facts_db"
