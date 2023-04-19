@@ -8,11 +8,11 @@ import psycopg2
 import connection_utils as utils
 from botocore.exceptions import ClientError
 import os
-lock: threading.Lock = threading.Lock()
+from queue import Queue
 
 MAX_CONNECTION_REESTABLISH_ATTEMPTS = 5
 BUCKET_NAME = os.environ[const.BUCKET_NAME_KEY]
-MAX_PROCESSING_BATCH_SIZE = 5
+MAX_PROCESSING_BATCH_SIZE = 10
 
 class file_processing_worker (threading.Thread):
 
@@ -20,36 +20,37 @@ class file_processing_worker (threading.Thread):
         self,
         threadID,
         name,
-        counter,
+        queue: Queue,
         zip: ZipFile,
-        files: list[ZipInfo],
         s3
     ):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
-        self.counter = counter
         self.zip = zip
-        self.files = files
         self.s3 = s3
+        self.queue = queue
 
     def run(self):
         loop: asyncio.AbstractEventLoop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(self.waitForProcessingCompletion(loop))
         loop.close()
+        print("%s is finished processing!" % self.name)
 
     async def waitForProcessingCompletion(
             self,
             loop: asyncio.AbstractEventLoop) -> None:
         i = 0
-        while i in range(len(self.files)):
+        while not self.queue.empty():
             tasks: list[asyncio.Task] = []
-            for j in range(MAX_PROCESSING_BATCH_SIZE):
+            j = 0
+            while j in range(MAX_PROCESSING_BATCH_SIZE) and not self.queue.empty():
                 tasks.append(loop.create_task(self.processFactsFile(
-                        self.files[i]
+                        self.queue.get()
                     )))
                 i += 1
+                j += 1
             await asyncio.wait(tasks)
 
     async def processFactsFile(
@@ -69,7 +70,7 @@ class file_processing_worker (threading.Thread):
                     fileAdded = True
             except ClientError as ex:
                 if ex.response['Error']['Code'] == 'NoSuchKey':
-                    print("%s: self.name: Adding %s..." % (self.name, cik))
+                    print("%s: Adding %s..." % (self.name, cik))
                     self.__attempt_insert(cik, temp)
                     fileAdded = True
                 else:

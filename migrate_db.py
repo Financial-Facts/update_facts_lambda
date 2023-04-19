@@ -9,6 +9,7 @@ from zipfile import ZipInfo
 from botocore.exceptions import ClientError
 import file_processing_worker as fpw
 import connection_utils as utils
+from queue import Queue
 
 
 MAX_NUMBER_OF_THREADS = 10
@@ -42,22 +43,17 @@ def __download_and_process_data() -> None:
 def __divide_processing_workload(zfile: ZipFile):
     print("Dividing processing workload to workers...")
     files: list[ZipInfo] = zfile.filelist
-    if (len(files) % MAX_NUMBER_OF_THREADS == 0):
-        step = int(len(files)/MAX_NUMBER_OF_THREADS)
-    else:
-        step = int(len(files)/MAX_NUMBER_OF_THREADS) + 1
+    queue = Queue()
+    for file in files:
+        queue.put(file)
     threads = []
-    file_batches = []
     s3Client = utils.initialize_S3()
-    for i in range(0, len(files), step):
-        file_batches.append(files[i:i+step])
-    for i in range(len(file_batches)):
+    for i in range(MAX_NUMBER_OF_THREADS):
         threads.append(fpw.file_processing_worker(
             threadID=i,
             name='file_processing_worker_%s' % i,
-            counter=len(file_batches[i]),
+            queue=queue,
             zip=zfile,
-            files=file_batches[i],
             s3=s3Client
         ))
         print("Starting worker %s..." % i)
