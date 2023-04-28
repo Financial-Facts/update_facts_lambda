@@ -1,6 +1,6 @@
 # migrate_facts_db
 
-##Script Operation Overview
+## Script Operation Overview
 
 ### Step 1
 Establishes connection with PostgreSQL database using reconfigurable environmental variables
