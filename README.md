@@ -1,5 +1,7 @@
 # update_facts_lambda
 
+Downloads bulk financial information for all public entities from SEC and loads the data as JSON files into an S3 bucket indexed by their respective CIK
+
 ![image](https://user-images.githubusercontent.com/74555083/236580560-46d639fd-dd91-446d-9e94-09ed053930dd.png)
 
 ## Sample Log
@@ -50,9 +52,6 @@
 
 2023-05-05T17:41:08.109-05:00	END RequestId: 3d0ff246-b09d-4e74-8e1a-c5c4fe1680d9
 ```
-
-## Description of Function
-Downloads bulk financial information for all public entities from SEC and loads the data as JSON files into an S3 bucket indexed by their respective CIK
 
 ## Script Operation Overview
 
