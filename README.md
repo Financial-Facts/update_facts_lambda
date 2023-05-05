@@ -2,6 +2,8 @@
 
 Downloads bulk financial information for all public entities from SEC and loads the data as JSON files into an S3 bucket indexed by their respective CIK
 
+--------------------------
+
 ![image](https://user-images.githubusercontent.com/74555083/236580560-46d639fd-dd91-446d-9e94-09ed053930dd.png)
 
 ## Sample Log
