@@ -1,7 +1,7 @@
 # migrate_facts_db
 
 ## Description of Function
-Downloads financial information from SEC and loads the data as JSON files into an S3 bucket indexed by their respective CIK
+Downloads bulk financial information for all public entities from SEC and loads the data as JSON files into an S3 bucket indexed by their respective CIK
 
 ## Script Operation Overview
 
