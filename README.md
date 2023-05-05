@@ -1,4 +1,5 @@
-# migrate_facts_db
+# update_facts_lambda
+
 
 ## Description of Function
 Downloads bulk financial information for all public entities from SEC and loads the data as JSON files into an S3 bucket indexed by their respective CIK
