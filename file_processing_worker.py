@@ -4,13 +4,10 @@ from zipfile import ZipFile
 from zipfile import ZipInfo
 import json
 import serviceConstants as const
-import psycopg2
-import connection_utils as utils
 from botocore.exceptions import ClientError
 import os
 from queue import Queue
 
-MAX_CONNECTION_REESTABLISH_ATTEMPTS = 5
 BUCKET_NAME = os.environ[const.BUCKET_NAME_KEY]
 MAX_PROCESSING_BATCH_SIZE = 10
 
@@ -66,12 +63,10 @@ class file_processing_worker (threading.Thread):
                     temp != data
                 ):
                     print("%s: Updating %s..." % (self.name, cik))
-                    self.__attempt_update(cik, temp)
                     fileAdded = True
             except ClientError as ex:
                 if ex.response['Error']['Code'] == 'NoSuchKey':
                     print("%s: Adding %s..." % (self.name, cik))
-                    self.__attempt_insert(cik, temp)
                     fileAdded = True
                 else:
                     print(ex)
@@ -83,65 +78,3 @@ class file_processing_worker (threading.Thread):
             object.put(Body=json.dumps(temp))
         else:
             print("%s: %s is up to date!" % (self.name, cik))
-
-    
-    def __attempt_update(self, cik, data) -> None:
-        connection = utils.get_db_connection()
-        updateComplete = False
-        retryAttempts = MAX_CONNECTION_REESTABLISH_ATTEMPTS
-        with connection.cursor() as cursor:
-            while (not updateComplete and retryAttempts >= 5):
-                try:
-                    self.__update_database(data, cik, cursor)
-                    updateComplete = True
-                except psycopg2.OperationalError:
-                    connection = utils.get_db_connection()
-                    cursor = connection.cursor()
-        cursor.close()
-        connection.close()
-
-    def __update_database(self, data, cik, cursor) -> None:
-        try:
-            text = json.dumps(data)
-            text = text.replace('\'', const.EMPTY)
-            try:
-                cursor.execute(const.UPDATE_DATA_QUERY % (
-                    text,
-                    cik
-                ))
-            except psycopg2.errors.UniqueViolation:
-                pass
-        except OSError:
-            pass
-
-    def __attempt_insert(self, cik, data) -> None:
-        connection = utils.get_db_connection()
-        insertComplete = False
-        retryAttempts = MAX_CONNECTION_REESTABLISH_ATTEMPTS
-        with connection.cursor() as cursor:
-            while (not insertComplete and retryAttempts >= 0):
-                try:
-                    self.__insert_database(data, cik, cursor)
-                    insertComplete = True
-                except psycopg2.errors.InFailedSqlTransaction:
-                    print("%s already exists within database..." % cik)
-                    insertComplete = True
-                except psycopg2.OperationalError:
-                    connection = utils.get_db_connection()
-                    cursor = connection.cursor()
-        cursor.close()
-        connection.close()
-
-    def __insert_database(self, data, cik, cursor) -> None:
-        try:
-            text = json.dumps(data)
-            text = text.replace('\'', const.EMPTY)
-            try:
-                cursor.execute(const.INSERT_DATA_QUERY % (
-                    cik,
-                    text
-                ))
-            except psycopg2.errors.UniqueViolation:
-                pass
-        except OSError:
-            pass

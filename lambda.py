@@ -1,4 +1,3 @@
-import psycopg2
 import time
 import os
 import serviceConstants as const
@@ -12,20 +11,6 @@ from queue import Queue
 
 
 MAX_NUMBER_OF_THREADS = 10
-
-def __initialize_db() -> None:
-    print("Initializing database connection..")
-    connection = utils.get_db_connection()
-    cursor = connection.cursor()
-    try:
-        cursor.execute(const.CREATE_FACTS_TABLE_QUERY)
-    except (psycopg2.errors.InvalidSchemaName):
-        cursor.execute(const.CREATE_SCHEMA_QUERY)
-        cursor.execute(const.CREATE_FACTS_TABLE_QUERY)
-    connection.commit()
-    cursor.close()
-    connection.close()
-
 
 def __download_and_process_data(number_of_chunks: int, chunk_to_process: int) -> None:
     print("Downloading facts data from EDGAR...")
@@ -83,7 +68,6 @@ def start(event, context):
     number_of_chunks = int(event['NUMBER_OF_CHUNKS_KEY'])
     chunk_to_process = int(event['CHUNK_TO_PROCESS_KEY'])
 
-    __initialize_db()
     __download_and_process_data(number_of_chunks, chunk_to_process)
 
     end = time.time()

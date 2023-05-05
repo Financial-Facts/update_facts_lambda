@@ -13,18 +13,6 @@ BUCKET_NAME_KEY="BUCKET_NAME_KEY"
 USER_AGENT_VALUE_KEY = 'USER_AGENT_VALUE_KEY'
 EMPTY = ''
 
-# Queries
-CREATE_SCHEMA_QUERY = """CREATE SCHEMA financial_facts;
-                         GRANT ALL ON SCHEMA financial_facts TO choochera;
-                         SET schema 'financial_facts'"""
-CREATE_FACTS_TABLE_QUERY = """CREATE TABLE IF NOT EXISTS facts (
-                            cik varchar(13) not null primary key,
-                            data jsonb
-                        );"""
-INSERT_DATA_QUERY = """INSERT INTO financial_facts.facts (cik, data)
-                     values('%s', (select * from to_jsonb('%s'::JSONB)));COMMIT;"""
-UPDATE_DATA_QUERY = """UPDATE facts set data='%s' where cik='%s';COMMIT;"""
-
 # Urls
 EDGAR_URL = "https://www.sec.gov/Archives/edgar"
 DATA_ZIP_PATH = "/daily-index/xbrl/companyfacts.zip"
