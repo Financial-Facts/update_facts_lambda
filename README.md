@@ -3,7 +3,27 @@
 Downloads bulk financial information for all public entities from SEC and loads the data as JSON files into an S3 bucket indexed by their respective CIK
 
 --------------------------
+## Flow
+![flow](https://user-images.githubusercontent.com/74555083/236692138-350a3603-0bab-43df-bcdf-5b720a2a7876.svg)
 
+## Script Operation Overview
+
+### Step 1
+Imports stock json data from sec EDGAR website as zip file and streams files into a Queue for use in following steps
+
+### Step 2
+Establishes connection with S3 bucket
+
+### Step 3
+Begins processing the files within the stream. The workload is divided across multiple threads which begin processing the files in asynchronous batches, pulling the files from the thread safe Queue. This is continued until all of the files have been processed. Processing includes:
+  - Checking the S3 bucket for an existing file of the same name.
+    - If file exists in S3 bucket: 
+      1. Compare S3 file contents to the current streamed file
+      2. If they differ in content, update the S3 bucket, otherwise continue
+    - If file does not exist in S3 bucket:
+      1. Insert the file into S3 bucket
+      
+## Sample Output
 ![image](https://user-images.githubusercontent.com/74555083/236580560-46d639fd-dd91-446d-9e94-09ed053930dd.png)
 
 ## Sample Log
@@ -54,22 +74,5 @@ Downloads bulk financial information for all public entities from SEC and loads 
 
 2023-05-05T17:41:08.109-05:00	END RequestId: 3d0ff246-b09d-4e74-8e1a-c5c4fe1680d9
 ```
-
-## Script Operation Overview
-
-### Step 1
-Imports stock json data from sec EDGAR website as zip file and streams files into a Queue for use in following steps
-
-### Step 2
-Establishes connection with S3 bucket
-
-### Step 3
-Begins processing the files within the stream. The workload is divided across multiple threads which begin processing the files in asynchronous batches, pulling the files from the thread safe Queue. This is continued until all of the files have been processed. Processing includes:
-  - Checking the S3 bucket for an existing file of the same name.
-    - If file exists in S3 bucket: 
-      1. Compare S3 file contents to the current streamed file
-      2. If they differ in content, update the S3 bucket, otherwise continue
-    - If file does not exist in S3 bucket:
-      1. Insert the file into S3 bucket
       
   
