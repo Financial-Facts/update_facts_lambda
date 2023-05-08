@@ -1,6 +1,14 @@
 # update_facts_lambda
 
-Downloads bulk financial information for all public entities from SEC and loads the data as JSON files into an S3 bucket indexed by their respective CIK
+Update_Facts_Lambda is a Python-based software project designed to automate the process of downloading and storing public filing information from the SEC EDGAR API. The software can be invoked multiple times simultaneously, with different chunks of data designated to be processed by each respective invocation for asynchronous lambda processing. This feature makes Update_Facts_Lambda highly scalable and able to handle the large volumes of data.
+
+With Update_Facts_Lambda, you can easily download and store JSON files in an AWS S3 bucket and keep them up-to-date with the latest filings issued by each respective company. The software uses file queueing and multithreaded processing along with asynchronous batches of tasks to ensure that new filings are added or updated within the bucket in a timely and efficient manner.
+
+Key features of the software include seamless communication with the AWS S3 bucket, support for AWS Lambda function invocation, streaming data downloaded directly from the SEC EDGAR API, multi-threaded queue processing, asynchronous batch processing, and the ability for the lambda to be invoked multiple times at once for simultaneous processing of different chunks of the json files. These features make Update_Facts_Lambda a reliable, efficient, and highly scalable solution for managing SEC filing data.
+
+Using Update_Facts_Lambda can significantly reduce the time and effort required to keep your SEC filing data up-to-date, and help you make more informed investment decisions based on the latest filings issued by companies. Additionally, the software provides a scalable and cost-effective solution for managing large volumes of SEC filing data, making it an ideal choice for companies of all sizes.
+
+Overall, Update_Facts_Lambda is a powerful and innovative solution for managing SEC filing data, and is a must-have tool for anyone who needs to stay up-to-date with the latest filings issued by companies while also supporting highly scalable and efficient processing of large amounts of data.
 
 --------------------------
 ## Flow
