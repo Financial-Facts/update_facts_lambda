@@ -83,4 +83,4 @@ Begins processing the files within the stream. The workload is divided across mu
 2023-05-05T17:41:08.109-05:00	END RequestId: 3d0ff246-b09d-4e74-8e1a-c5c4fe1680d9
 ```
       
-  
+Created and authored by Matthew Gabriel
